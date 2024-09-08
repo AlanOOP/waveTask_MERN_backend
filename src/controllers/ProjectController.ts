@@ -6,12 +6,20 @@ export class ProjectController {
 
 
     static getAllProjects = async (req: Request, res: Response): Promise<void> => {
+
+        const { _id } = req.user;
         try {
-            const projects = await Project.find().populate('tasks');
+            const projects = await Project.find({
+                $or: [
+                    { manager: { $in: _id } },
+                    { team: { $in: _id } }
+                ]
+            }).populate('tasks');
             res.status(200).json(projects);
             return;
         } catch (error) {
             console.log(error);
+            res.status(500).json({ error: error.message });
         }
     }
 
@@ -32,10 +40,17 @@ export class ProjectController {
                 return;
             }
 
+            if (project.manager.toString() !== req.user.id && !project.team.includes(req.user.id)) {
+                const error = new Error('Acción no Valida');
+                res.status(401).json({ error: error.message });
+                return;
+            }
+
             res.status(200).json(project)
 
         } catch (error) {
-            console.log(error)
+            console.log(error);
+            res.status(500).json({ error: error.message });
         }
     }
 
@@ -54,14 +69,16 @@ export class ProjectController {
             const project = new Project({
                 projectName,
                 clientName,
-                description
+                description,
+                manager: req.user.id
             });
 
             await project.save();
 
-            res.status(201).json({ message: 'Proyecto Actualizado correctamente' });
+            res.status(201).json({ message: 'Proyecto Creado correctamente' });
         } catch (error) {
             console.log(error);
+            res.status(500).json({ error: error.message });
         }
     }
 
@@ -77,7 +94,7 @@ export class ProjectController {
                 return;
             }
             if (!projectName || !clientName || !description) {
-                const error = new Error('Todos los campos son requeridos')
+                const error = new Error('Todos los campos son requerdos')
                 res.status(400).json({ error: error.message });
                 return;
             }
@@ -87,6 +104,11 @@ export class ProjectController {
             if (!project) {
                 const error = new Error('Proyecto no encontrado');
                 res.status(404).json({ error: error.message });
+                return;
+            }
+            if (project.manager.toString() !== req.user.id) {
+                const error = new Error('Acción no Valida');
+                res.status(401).json({ error: error.message });
                 return;
             }
 
@@ -101,6 +123,7 @@ export class ProjectController {
 
         } catch (error) {
             console.log(error);
+            res.status(500).json({ error: error.message });
         }
     }
 
@@ -122,9 +145,16 @@ export class ProjectController {
                 return;
             }
 
+            if (project.manager.toString() !== req.user.id) {
+                const error = new Error('Acción no Valida');
+                res.status(401).json({ error: error.message });
+                return;
+            }
+
             res.status(200).json({ message: 'Proyecto eliminado correctamente' });
         } catch (error) {
             console.log(error);
+            res.status(500).json({ error: error.message });
         }
     }
 

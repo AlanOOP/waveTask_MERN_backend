@@ -5,7 +5,7 @@ import { isValidId } from "../helpers";
 declare global {
     namespace Express {
         interface Request {
-            project: IProject
+            project?: IProject
         }
     }
 }

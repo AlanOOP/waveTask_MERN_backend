@@ -31,7 +31,7 @@ export class TaskController {
                 return
             }
 
-            const task = await Task.findById(taskId);
+            const task = await Task.findById(taskId).populate({ path: 'completedBy', select: 'id name email' });
 
             if (!task) {
                 const error = new Error('Tarea no encontrado');
@@ -190,6 +190,13 @@ export class TaskController {
             }
 
             task.status = status;
+
+            if (status === 'pending') {
+                task.completedBy = null
+            } else {
+                task.completedBy = req.user.id
+            }
+
 
             await task.save();
 
